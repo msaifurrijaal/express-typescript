@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import User from "../db/models/User";
 import Helper from "../helpers/Helper";
 import PasswordHelper from "../helpers/PasswordHelper";
+import Role from "../db/models/Role";
 
 const register = async (req: Request, res: Response): Promise<Response> => {
   try {
@@ -126,4 +127,65 @@ const refreshToken = async (req: Request, res: Response): Promise<Response> => {
   }
 };
 
-export default { register, login, refreshToken };
+const userDetail = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const email = res.locals.userEmail;
+    const user = await User.findOne({
+      where: {
+        email: email,
+      },
+      include: {
+        model: Role,
+        attributes: ["id", "roleName"],
+      },
+    });
+
+    console.log(user);
+
+    if (!user) {
+      return res
+        .status(404)
+        .send(Helper.responseData(404, "User not found", null, null));
+    }
+
+    user.password = "";
+    user.accessToken = "";
+    return res.status(200).send(Helper.responseData(200, "OK", null, user));
+  } catch (error) {
+    return res.status(500).send(Helper.responseData(500, "", error, null));
+  }
+};
+
+const logout = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const refreshToken = req.cookies?.refreshToken;
+    if (!refreshToken) {
+      return res
+        .status(200)
+        .send(Helper.responseData(200, "User logout", null, null));
+    }
+    const email = res.locals.userEmail;
+    const user = await User.findOne({
+      where: {
+        email: email,
+      },
+    });
+
+    if (!user) {
+      res.clearCookie("refreshToken");
+      return res
+        .status(200)
+        .send(Helper.responseData(200, "User logout", null, null));
+    }
+
+    await user.update({ accessToken: null }, { where: { email: email } });
+    res.clearCookie("refreshToken");
+    return res
+      .status(200)
+      .send(Helper.responseData(200, "User logout", null, null));
+  } catch (error) {
+    return res.status(500).send(Helper.responseData(500, "", error, null));
+  }
+};
+
+export default { register, login, refreshToken, userDetail, logout };

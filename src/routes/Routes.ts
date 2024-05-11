@@ -8,11 +8,30 @@ const router = express.Router();
 
 // Route Role
 router.get("/role", Authorization.authenticated, RoleController.getRole);
-router.get("/role/:id", RoleController.getRoleById);
-router.post("/role", RoleController.createRole);
-router.put("/role/:id", RoleController.updateRole);
-router.put("/role/:id", RoleController.updateRole);
-router.delete("/role/:id", RoleController.deleteRole);
+router.get(
+  "/role/:id",
+  Authorization.authenticated,
+  RoleController.getRoleById
+);
+router.post(
+  "/role",
+  Authorization.authenticated,
+  Authorization.adminRole,
+  RoleController.createRole
+);
+router.put(
+  "/role/:id",
+  Authorization.authenticated,
+  Authorization.adminRole,
+  RoleController.updateRole
+);
+router.put("/role/:id", Authorization.authenticated, RoleController.updateRole);
+router.delete(
+  "/role/:id",
+  Authorization.authenticated,
+  Authorization.superUser,
+  RoleController.deleteRole
+);
 
 // Route User
 router.post(
@@ -22,5 +41,11 @@ router.post(
 );
 router.post("/user/login", UserController.login);
 router.get("/user/refresh-token", UserController.refreshToken);
+router.get(
+  "/user/current-user",
+  Authorization.authenticated,
+  UserController.userDetail
+);
+router.get("/user/logout", Authorization.authenticated, UserController.logout);
 
 export default router;
